@@ -1,0 +1,66 @@
+#!/sbin/openrc-run
+# ESP-NOW over Nexmon monitor mode. Settings: /etc/conf.d/espnow
+
+description="ESP-NOW on the onboard Wi-Fi (Nexmon monitor mode)"
+
+: ${ESPNOW_CHANNEL:=1}
+: ${ESPNOW_WLAN:=wlan0}
+: ${ESPNOW_MON:=mon0}
+: ${BRCMFMAC_OPTS:=roamoff=1 feature_disable=0x282000}
+_mods=/usr/lib/espnow/modules
+
+depend() {
+	need localmount
+	# start last: if the driver misbehaves, SSH is already up
+	after modloop modules networking dropbear
+}
+
+_wait_for() {
+	local i=0
+	while [ ! -e "$1" ] && [ $i -lt 100 ]; do
+		sleep 0.1
+		i=$((i + 1))
+	done
+	[ -e "$1" ]
+}
+
+start() {
+	ebegin "Starting ESP-NOW on channel $ESPNOW_CHANNEL"
+	if [ -d /sys/module/brcmfmac ]; then
+		grep -q nexmon /sys/module/brcmfmac/version 2>/dev/null || {
+			eend 1 "stock brcmfmac is loaded; check /etc/modprobe.d/espnow-nexmon.conf"
+			return 1
+		}
+	else
+		modprobe -a cfg80211 brcmutil && insmod $_mods/brcmfmac.ko $BRCMFMAC_OPTS || {
+			eend 1 "failed to load Nexmon brcmfmac"
+			return 1
+		}
+	fi
+	_wait_for /sys/class/net/$ESPNOW_WLAN || { eend 1 "$ESPNOW_WLAN did not appear"; return 1; }
+
+	# wlan0 up once initialises the chip; it never associates. It must be down
+	# again before the channel is set: cfg80211 only lets you set a monitor
+	# channel when monitor interfaces are the only ones running (else EBUSY).
+	# Nexmon's wlan0 down doesn't power the radio off.
+	ip link set "$ESPNOW_WLAN" up &&
+	{ [ -e /sys/class/net/$ESPNOW_MON ] ||
+		iw dev "$ESPNOW_WLAN" interface add "$ESPNOW_MON" type monitor; } &&
+	ip link set "$ESPNOW_WLAN" down &&
+	ip link set "$ESPNOW_MON" up &&
+	iw dev "$ESPNOW_MON" set channel "$ESPNOW_CHANNEL" &&
+	{ [ -d /sys/module/espnow ] || insmod $_mods/espnow.ko parent="$ESPNOW_MON"; } &&
+	_wait_for /sys/class/net/espnow0 &&
+	ip link set espnow0 up
+	eend $? "ESP-NOW setup failed; see dmesg"
+	sysctl -q -w net.ipv6.conf.espnow0.disable_ipv6=1 2>/dev/null
+	return 0
+}
+
+stop() {
+	ebegin "Stopping ESP-NOW"
+	ip link set espnow0 down 2>/dev/null
+	rmmod espnow 2>/dev/null
+	iw dev "$ESPNOW_MON" del 2>/dev/null
+	eend 0
+}

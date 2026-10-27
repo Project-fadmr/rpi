@@ -1,0 +1,14 @@
+# Included by Alpine's config.txt. Every line is explained in docs/config.md.
+
+# Buses
+dtparam=i2c_arm=on
+dtparam=spi=on
+enable_uart=1
+dtparam=uart0=on
+
+# Power: switch off what we don't use
+dtoverlay=disable-bt
+dtparam=audio=off
+camera_auto_detect=0
+display_auto_detect=0
+max_framebuffers=0

@@ -1,0 +1,79 @@
+# Contributor: slindauskands@gmail.com
+# Pins documented in docs/pins.md - change them together.
+pkgname=espnow-nexmon
+pkgver=0.1.0
+pkgrel=4
+_kpkgver=6.12.85-r0		# linux-rpi package version
+_krel=6.12.85-0-rpi		# matching kernel release (uname -r)
+_drvcommit=fff319040f6a8034fce36f846cce2dc19de1b396	# kali brcmfmac-nexmon-dkms 6.12.2
+_fwcommit=42e244621979ba96d82220a3324771d0b6e212eb	# kali firmware-nexmon 0.2
+pkgdesc="ESP-NOW receiver over Nexmon brcmfmac monitor mode for Raspberry Pi 5"
+url="https://gitlab.com/kalilinux/packages/brcmfmac-nexmon-dkms"
+arch="aarch64"
+license="GPL-2.0-only AND ISC AND LicenseRef-Broadcom-firmware"
+depends="linux-rpi=$_kpkgver iw"
+makedepends="linux-rpi-dev=$_kpkgver"
+options="!strip"
+source="brcmfmac-nexmon-$_drvcommit.tar.gz::https://gitlab.com/kalilinux/packages/brcmfmac-nexmon-dkms/-/archive/$_drvcommit/brcmfmac-nexmon-dkms-$_drvcommit.tar.gz
+	firmware-nexmon-$_fwcommit.tar.gz::https://gitlab.com/kalilinux/packages/firmware-nexmon/-/archive/$_fwcommit/firmware-nexmon-$_fwcommit.tar.gz
+	espnow.c
+	espnow_frame.h
+	Kbuild
+	frame_test.c
+	espnow.initd
+	espnow.confd
+	espnow-modprobe.conf
+	"
+builddir="$srcdir"
+_kdir=/usr/src/linux-headers-$_krel
+_drv="brcmfmac-nexmon-dkms-$_drvcommit"
+_fw="firmware-nexmon-$_fwcommit"
+
+prepare() {
+	default_prepare
+	mkdir -p espnow
+	cp espnow.c espnow_frame.h Kbuild espnow/
+}
+
+build() {
+	make -C "$_kdir" M="$srcdir/$_drv" modules
+	make -C "$_kdir" M="$srcdir/espnow" modules
+	${CC:-gcc} -Wall -Wextra -O2 -o frame_test frame_test.c
+}
+
+check() {
+	./frame_test
+	# modules must match the kernel they will be loaded into
+	modinfo -F vermagic "$_drv"/brcmfmac.ko | grep -q "^$_krel "
+	modinfo -F vermagic espnow/espnow.ko | grep -q "^$_krel "
+}
+
+package() {
+	local fwdir="$pkgdir"/usr/lib/espnow/firmware/brcm ext
+
+	install -Dm644 "$_drv"/brcmfmac.ko espnow/espnow.ko \
+		-t "$pkgdir"/usr/lib/espnow/modules/
+
+	# Nexmon monitor/injection firmware, under the names brcmfmac asks for on a Pi 5
+	install -Dm644 "$_fw"/cypress/cyfmac43455-sdio-standard.bin "$fwdir"/brcmfmac43455-sdio.bin
+	install -Dm644 "$_fw"/cypress/cyfmac43455-sdio.clm_blob "$fwdir"/brcmfmac43455-sdio.clm_blob
+	install -Dm644 "$_fw"/brcm/brcmfmac43455-sdio.txt "$fwdir"/brcmfmac43455-sdio.txt
+	for ext in bin clm_blob txt; do
+		ln -s brcmfmac43455-sdio.$ext "$fwdir/brcmfmac43455-sdio.raspberrypi,5-model-b.$ext"
+	done
+
+	install -Dm755 "$srcdir"/espnow.initd "$pkgdir"/etc/init.d/espnow
+	install -Dm644 "$srcdir"/espnow.confd "$pkgdir"/etc/conf.d/espnow
+	install -Dm644 "$srcdir"/espnow-modprobe.conf "$pkgdir"/etc/modprobe.d/espnow-nexmon.conf
+}
+sha512sums="
+5f4e7cb9ddf2b580ed24aff2b0afda318c7efdcdba6920623ae76d82ae2110ae9343df753204e6b79a7d35fa00ee71f2272fb7d3f3f1a4053b428dfc1145cea0  brcmfmac-nexmon-fff319040f6a8034fce36f846cce2dc19de1b396.tar.gz
+72895a62340e52c4367468069f03f4ff68e584819e24dd0ce931cc6222cbcea4d57daaf7f527cded16a84747fca9d627fcd3ac2c9e6ab8c8c4fb0369d352e179  firmware-nexmon-42e244621979ba96d82220a3324771d0b6e212eb.tar.gz
+7e75aba4fb56fa6ef4b3c8ed92d571debb8d644f0cc9441189309d5a9e8bbf5078ea6ab6cd0130b6b772abb5f302c46359ac11898e436a096283cf50a635cf5c  espnow.c
+1d96a5e96a14c29fbb8653da7b04058faa79f05d8ad1ca0d5e8e24d8d95884318733c940a13ccc003a96a1afdc536b15112c7e9ffacfb43a446fb74007c95d29  espnow_frame.h
+dc128da4c3fb2b9bee07c6c6f4578d2eb68fb32579e9ad6cff9333d07bf6b7ec48de640f2705381333ff641cae603e243d1c7a286c8b937df126bde0b45a2229  Kbuild
+d260848109fedaed40a2c782708f649869489aefdd28a5382eac4c90b6825be41823afdfd05d95b85867633d28f84c0ef0b063b85fea7210af589e0eefe6d5c6  frame_test.c
+61f36176b0be50e50a07592304ed9b00bbc82e40505e82b03e653cc3b99eb2930e7fe0583764d14e9653989c7d2aaf98a78d3419aea77dce5e3e2ccce54605bc  espnow.initd
+661d13130e51747567f8e080919395a01db40ca953251f3576d26d16dc9132e2d5517a7e261422d49d91fe197823ca47a2e67980fc9bb0361da638ae002f3e45  espnow.confd
+5bda0a6d747139e023ce32fcb7a955cadcc1e1dd9e4bd2c8cea67861c57990eade965fbaaaf7890937c6349923695178b9b3acff766b48f3d89d227097f45ffa  espnow-modprobe.conf
+"

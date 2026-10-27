@@ -1,0 +1,3 @@
+# Runtime power settings, applied by /etc/local.d/power.start
+# ETH=off powers eth0 down after boot; you then need the UART console to log in.
+ETH=on

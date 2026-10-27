@@ -1,0 +1,25 @@
+# Contributor: slindauskands@gmail.com
+# Not packaged in Alpine 3.23 main/community; see docs/software.md
+pkgname=py3-spidev
+pkgver=3.8
+pkgrel=0
+pkgdesc="Python bindings for Linux SPI access through spidev"
+url="https://github.com/doceme/py-spidev"
+arch="all"
+license="MIT"
+depends="python3"
+makedepends="python3-dev py3-gpep517 py3-installer py3-setuptools py3-wheel linux-headers"
+options="!check"	# needs real SPI hardware
+source="https://files.pythonhosted.org/packages/source/s/spidev/spidev-$pkgver.tar.gz"
+builddir="$srcdir/spidev-$pkgver"
+
+build() {
+	gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	python3 -m installer -d "$pkgdir" .dist/*.whl
+}
+sha512sums="
+ef5e2e68cd8ce43d5738cb1d03e48a66f683afc9649379934382babf20b432c39a4261068e43763ff8491960d6734870c9daf91460cb07f7edfdbdc409bc0788  spidev-3.8.tar.gz
+"

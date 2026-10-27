@@ -1,0 +1,7 @@
+# ESP-NOW settings. Every ESP32/ESP8266 peer must use the same channel.
+ESPNOW_CHANNEL=1
+# Interface names; change only if your setup differs.
+#ESPNOW_WLAN=wlan0
+#ESPNOW_MON=mon0
+# Options for the Nexmon brcmfmac (same as Kali's firmware-nexmon package).
+#BRCMFMAC_OPTS="roamoff=1 feature_disable=0x282000"

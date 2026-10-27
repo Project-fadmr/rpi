@@ -1,0 +1,2 @@
+# Key-only logins: no passwords over SSH.
+DROPBEAR_OPTS="-s"

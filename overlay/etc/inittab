@@ -1,0 +1,7 @@
+# Only a serial console (Pi 5 debug UART); no HDMI gettys, see docs/config.md
+::sysinit:/sbin/openrc sysinit
+::sysinit:/sbin/openrc boot
+::wait:/sbin/openrc default
+ttyAMA10::respawn:/sbin/getty -L 115200 ttyAMA10 vt100
+::ctrlaltdel:/sbin/reboot
+::shutdown:/sbin/openrc shutdown

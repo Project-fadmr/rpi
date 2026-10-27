@@ -1,0 +1,5 @@
+# Downloads, toolchains and build output: recreated by build.sh / flash-esp32.sh
+cache/
+out/
+# Repo signing key: keep it, never commit it (the .pub is fine)
+keys/*.rsa

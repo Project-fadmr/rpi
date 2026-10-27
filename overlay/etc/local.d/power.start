@@ -1,0 +1,17 @@
+#!/bin/sh
+# Runtime power tuning; see docs/config.md
+. /etc/conf.d/power
+
+# Let USB and PCIe devices suspend when idle (not SDIO: that's the Wi-Fi)
+for f in /sys/bus/usb/devices/*/power/control /sys/bus/pci/devices/*/power/control; do
+	[ -w "$f" ] && echo auto > "$f"
+done
+
+# LEDs off
+for l in /sys/class/leds/*; do
+	echo none > "$l/trigger" 2>/dev/null
+	echo 0 > "$l/brightness" 2>/dev/null
+done
+
+[ "$ETH" = off ] && ip link set eth0 down
+exit 0
