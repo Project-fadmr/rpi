@@ -1,0 +1,3 @@
+# WS281x PWM settings. The pin mux in the overlay is fixed to GPIO18, which is channel 2.
+# Change the channel only together with the overlay.
+WS281X_PWM_CHANNEL=2

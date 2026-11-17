@@ -12,3 +12,6 @@ dtparam=audio=off
 camera_auto_detect=0
 display_auto_detect=0
 max_framebuffers=0
+
+# WS281x LEDs on GPIO18 (RP1 PWM channel 2): overlay from overlays/, driver from rpi-ws281x-pwm
+dtoverlay=rp1_ws281x_pwm

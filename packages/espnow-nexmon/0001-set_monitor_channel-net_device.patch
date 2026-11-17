@@ -1,0 +1,25 @@
+Subject: [PATCH] nexmon: match the 6.12.115 set_monitor_channel prototype
+
+Local compatibility patch for this project (packages/espnow-nexmon), not
+upstream. Kali's brcmfmac-nexmon 6.12.2 gates the monitor-channel callback
+on LINUX_VERSION_CODE < 6.13.0 and uses the old two-argument form
+(wiphy, chandef). The 6.12.115 stable kernel changed cfg80211_ops
+.set_monitor_channel to take a struct net_device * as well, so the driver
+no longer compiles on 6.12.115 ("initialization ... from incompatible
+pointer type").
+
+The gate is moved to 6.12.115, the kernel this image pins. Kernels older
+than that keep the old form. The new branch has the same body; the
+net_device argument is unused, as before.
+
+--- a/brcmfmac-nexmon-dkms-fff319040f6a8034fce36f846cce2dc19de1b396/cfg80211.c
++++ b/brcmfmac-nexmon-dkms-fff319040f6a8034fce36f846cce2dc19de1b396/cfg80211.c
+@@ -765,7 +765,7 @@
+ }
+ 
+ #ifdef NEXMON_MON_IF
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(6,13,0)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,115)
+ static s32
+ brcmf_cfg80211_nexmon_set_channel(struct wiphy *wiphy,struct cfg80211_chan_def *chandef) {
+ #else

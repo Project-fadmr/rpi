@@ -19,3 +19,5 @@ i2c-tools-dev
 py3-smbus
 py3-spidev
 picocom
+py3-rpi-ws281x
+rpi-ws281x-pwm

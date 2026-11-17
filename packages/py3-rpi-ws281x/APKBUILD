@@ -1,0 +1,45 @@
+# Contributor: slindauskands@gmail.com
+# Pins documented in docs/pins.md - change them together.
+pkgname=py3-rpi-ws281x
+pkgver=6.0.0
+pkgrel=0
+_pycommit=df3197bd213c6d74db5755711d615ce20c7e0d1e	# rpi-ws281x-python tag pi5-beta2 (= pi5 branch head)
+_libcommit=35a942c452e216e38fb91a5a522435e8aae56d36	# jgarff/rpi_ws281x: library/lib submodule at pi5-beta2
+pkgdesc="Python bindings for WS281x LEDs on the Raspberry Pi 5 (rp1 PWM kernel driver)"
+url="https://github.com/rpi-ws281x/rpi-ws281x-python"
+arch="aarch64"
+license="MIT"
+depends="python3 rpi-ws281x-pwm"
+makedepends="python3-dev py3-gpep517 py3-installer py3-setuptools py3-wheel linux-headers"
+source="rpi-ws281x-python-$_pycommit.tar.gz::https://github.com/rpi-ws281x/rpi-ws281x-python/archive/$_pycommit.tar.gz
+	rpi_ws281x-$_libcommit.tar.gz::https://github.com/jgarff/rpi_ws281x/archive/$_libcommit.tar.gz
+	"
+builddir="$srcdir/rpi-ws281x-python-$_pycommit/library"
+
+prepare() {
+	default_prepare
+	# the C library is a git submodule, which GitHub archives leave out
+	rm -rf lib
+	mv "$srcdir/rpi_ws281x-$_libcommit" lib
+}
+
+build() {
+	gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+check() {
+	# import the built extension; no hardware is touched at import time
+	rm -rf "$srcdir"/test-install
+	python3 -m zipfile -e .dist/*.whl "$srcdir"/test-install
+	PYTHONPATH="$srcdir"/test-install python3 -c "import rpi_ws281x, _rpi_ws281x; print('rpi_ws281x', rpi_ws281x.__version__)"
+	# the extension must use the rp1 kernel driver device, not /dev/mem
+	grep -aq /dev/ws281x_pwm "$srcdir"/test-install/_rpi_ws281x*.so
+}
+
+package() {
+	python3 -m installer -d "$pkgdir" .dist/*.whl
+}
+sha512sums="
+0c16118d17e7ca03bac484697619fd80bd46a8dc7bcdd9cd93cadd7eeb98a8da2f37f95cab552c7ece3d31f284c2342b30e15de52a36786718f732aa0e73ce65  rpi-ws281x-python-df3197bd213c6d74db5755711d615ce20c7e0d1e.tar.gz
+10fad7b2366f30f3bcba0e61ebaadaf718b78a9792b5cdd119fdc97e8446e9c723ee1d6b2ae45ab33cd70344830413e28a3ce83fd1fb2d901db80e1571be666d  rpi_ws281x-35a942c452e216e38fb91a5a522435e8aae56d36.tar.gz
+"

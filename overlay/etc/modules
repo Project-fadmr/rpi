@@ -1,2 +1,3 @@
 i2c-dev
 spidev
+cp210x

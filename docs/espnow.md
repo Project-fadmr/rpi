@@ -50,6 +50,8 @@ ESP-NOW has no channel negotiation, so the Pi and every ESP node must sit on the
 - **The radio is always on** while listening, see [config.md](config.md#power-tuning).
 - **Nothing else can use `mon0`.** `espnow.ko` consumes every frame on it. `tcpdump -i mon0` still works, because taps run first.
 
+The Nexmon driver source is Kali's `brcmfmac-nexmon-dkms` 6.12.2, with two local compile fixes for the 6.12.115 kernel (the `set_monitor_channel` argument and the renamed `SDIO_DEVICE_ID_BROADCOM_43752`). They are patch files in `packages/espnow-nexmon/`, see [pins.md](pins.md).
+
 ## Boot sequence (the `espnow` OpenRC service)
 
 1. It loads `cfg80211` and `brcmutil` from the modloop, then `insmod`s the Nexmon `brcmfmac.ko` from `/usr/lib/espnow/modules` with `roamoff=1 feature_disable=0x282000`. The stock brcmfmac is blacklisted.

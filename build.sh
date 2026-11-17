@@ -6,9 +6,9 @@ set -eu
 cd "$(dirname "$0")"
 
 # Pins: keep in sync with docs/pins.md
-ALPINE_VER=3.23.7
+ALPINE_VER=3.23.8
 ALPINE_BRANCH=v3.23
-ALPINE_SHA256=0529b72802ee37fa480bb57e7843ce0ef065438df697e45a9f957f0538a6817e
+ALPINE_SHA256=b8e6298889deac0382df24e5d94362def5558825c55c7c0f4e538244aa9daa56
 ALPINE_IMAGE=alpine@sha256:ff7f0c727dd796aa36787bfcd9a64bf35a6ce72a73451b3359fde849b6703d63
 BINFMT_IMAGE=tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
 MIRROR=https://dl-cdn.alpinelinux.org/alpine

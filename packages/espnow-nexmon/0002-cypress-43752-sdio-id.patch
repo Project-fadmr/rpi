@@ -1,0 +1,23 @@
+Subject: [PATCH] nexmon: define SDIO_DEVICE_ID_BROADCOM_CYPRESS_43752 for 6.12.115
+
+Local compatibility patch for this project (packages/espnow-nexmon), not
+upstream. Linux 6.12.115 renamed the SDIO id SDIO_DEVICE_ID_BROADCOM_CYPRESS_43752
+to SDIO_DEVICE_ID_BROADCOM_43752 (include/linux/mmc/sdio_ids.h, value 0xaae8,
+unchanged). Kali's driver still uses the old name in bcmsdh.c and sdio.c, so
+it fails to compile. This only adds the old name as an alias when the kernel
+does not define it. The device-table entries and the value are unchanged.
+The value 0xaae8 matches the upstream v6.12 sdio_ids.h.
+
+--- a/brcmfmac-nexmon-dkms-fff319040f6a8034fce36f846cce2dc19de1b396/include/brcm_hw_ids.h
++++ b/brcmfmac-nexmon-dkms-fff319040f6a8034fce36f846cce2dc19de1b396/include/brcm_hw_ids.h
+@@ -9,6 +9,10 @@
+ #include <linux/pci_ids.h>
+ #include <linux/mmc/sdio_ids.h>
+ 
++#ifndef SDIO_DEVICE_ID_BROADCOM_CYPRESS_43752
++#define SDIO_DEVICE_ID_BROADCOM_CYPRESS_43752	0xaae8
++#endif
++
+ #define BRCM_USB_VENDOR_ID_BROADCOM	0x0a5c
+ #define BRCM_USB_VENDOR_ID_LG		0x043e
+ #define BRCM_USB_VENDOR_ID_LINKSYS	0x13b1

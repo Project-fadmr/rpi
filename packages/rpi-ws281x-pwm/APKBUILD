@@ -1,0 +1,49 @@
+# Contributor: slindauskands@gmail.com
+# Pins documented in docs/pins.md - change them together.
+pkgname=rpi-ws281x-pwm
+pkgver=0.1.0
+pkgrel=0
+_kpkgver=6.12.115-r0		# linux-rpi package version
+_krel=6.12.115-0-rpi		# matching kernel release (uname -r)
+_pi5commit=1396df4f35a86de0f7e5eda91d94d4539eef1727	# jgarff/rpi_ws281x pi5 branch head, rp1_ws281x_pwm/
+pkgdesc="WS281x PWM kernel module and device-tree overlay for the Raspberry Pi 5 RP1 (GPIO18, channel 2)"
+url="https://github.com/jgarff/rpi_ws281x"
+arch="aarch64"
+license="GPL-2.0-only"
+depends="linux-rpi=$_kpkgver"
+makedepends="linux-rpi-dev=$_kpkgver dtc"
+options="!strip"
+source="rpi_ws281x-$_pi5commit.tar.gz::https://github.com/jgarff/rpi_ws281x/archive/$_pi5commit.tar.gz
+	rp1_ws281x_pwm.dts
+	rpi-ws281x-pwm.initd
+	rpi-ws281x-pwm.confd
+	"
+builddir="$srcdir"
+_kdir=/usr/src/linux-headers-$_krel
+_src="$srcdir/rpi_ws281x-$_pi5commit/rp1_ws281x_pwm"
+
+build() {
+	# same compile as upstream dts.sh, with our overlay source
+	dtc -@ -O dtb -o rp1_ws281x_pwm.dtbo rp1_ws281x_pwm.dts
+	make -C "$_kdir" M="$_src" modules
+}
+
+check() {
+	# module must match the kernel it will be loaded into
+	modinfo -F vermagic "$_src"/rp1_ws281x_pwm.ko | grep -q "^$_krel "
+	dtc -I dtb -O dts -o /dev/null rp1_ws281x_pwm.dtbo
+}
+
+package() {
+	install -Dm644 "$_src"/rp1_ws281x_pwm.ko -t "$pkgdir"/usr/lib/rpi-ws281x-pwm/modules/
+	install -Dm644 rp1_ws281x_pwm.dtbo -t "$pkgdir"/usr/share/rpi-ws281x-pwm/
+
+	install -Dm755 "$srcdir"/rpi-ws281x-pwm.initd "$pkgdir"/etc/init.d/rpi-ws281x-pwm
+	install -Dm644 "$srcdir"/rpi-ws281x-pwm.confd "$pkgdir"/etc/conf.d/rpi-ws281x-pwm
+}
+sha512sums="
+17e951ee2407498aff073d1d7db1a0640c842bb8bea24fb8a6dfe469532b5f215328200145796e41e7aff7f1a14f0f7c135d3f5ae30eb43e1f8823983e987105  rpi_ws281x-1396df4f35a86de0f7e5eda91d94d4539eef1727.tar.gz
+f72111e9a9217e2f71e3e0a53d59ebeb84552513f46dbf634efb1439e5ea1da6a6c7a51c6ff8f70d99737efd6e902198d77de004f82096c4d1441d87e1120b4d  rp1_ws281x_pwm.dts
+b67889e8d64aebb68490ec649857a2ea28c88b4ffab5d58bbe2bc7686265e6f1be436c0e11afad0893e6a08decdd0d139b38d17ee236e7ae2967db6ad32eb316  rpi-ws281x-pwm.initd
+52c41d0042204991bf457bc7f07cd1a21130aaccab3850cbca6015ce547a9d52b9f6f84d1cd3755bf949f40d5ad16bc7f98ef969352a2e8025b6122204f0d428  rpi-ws281x-pwm.confd
+"

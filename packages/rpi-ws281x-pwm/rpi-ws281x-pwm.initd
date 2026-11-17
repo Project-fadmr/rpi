@@ -1,0 +1,31 @@
+#!/sbin/openrc-run
+# WS281x PWM driver (RP1 PWM0, GPIO18). Settings: /etc/conf.d/rpi-ws281x-pwm
+
+description="WS281x PWM kernel module for the Raspberry Pi 5 RP1"
+
+: ${WS281X_PWM_CHANNEL:=2}
+_mods=/usr/lib/rpi-ws281x-pwm/modules
+_dev=/dev/ws281x_pwm
+
+depend() {
+	after modules
+}
+
+start() {
+	ebegin "Loading rp1_ws281x_pwm (pwm_channel=$WS281X_PWM_CHANNEL)"
+	if [ ! -d /sys/module/rp1_ws281x_pwm ]; then
+		insmod $_mods/rp1_ws281x_pwm.ko pwm_channel=$WS281X_PWM_CHANNEL || {
+			eend 1 "insmod failed; see dmesg"
+			return 1
+		}
+	fi
+	# the driver binds to the overlay's node when it loads; no node means no overlay
+	[ -e $_dev ]
+	eend $? "$_dev missing: the rp1_ws281x_pwm overlay is not active (see dmesg)"
+}
+
+stop() {
+	ebegin "Unloading rp1_ws281x_pwm"
+	rmmod rp1_ws281x_pwm 2>/dev/null
+	eend 0
+}

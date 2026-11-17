@@ -14,8 +14,18 @@ mkdir -p $M $R/etc/apk/keys $O
 tar xzf cache/alpine-rpi-$ALPINE_VER-aarch64.tar.gz -C $M
 krel=$(sed -n 's/^_krel=\([^[:space:]]*\).*/\1/p' packages/espnow-nexmon/APKBUILD)
 [ -f "$M/boot/config-$krel" ] || { echo "tarball kernel is not $krel" >&2; exit 1; }
+krel2=$(sed -n 's/^_krel=\([^[:space:]]*\).*/\1/p' packages/rpi-ws281x-pwm/APKBUILD)
+[ "$krel" = "$krel2" ] || { echo "_krel differs: espnow-nexmon $krel, rpi-ws281x-pwm $krel2" >&2; exit 1; }
 
 cp boot/usercfg.txt boot/cmdline.txt $M/
+# the WS281x overlay must be enabled, or the rpi-ws281x-pwm service finds no /dev/ws281x_pwm
+grep -qx 'dtoverlay=rp1_ws281x_pwm' $M/usercfg.txt || { echo "usercfg.txt lacks dtoverlay=rp1_ws281x_pwm" >&2; exit 1; }
+
+# WS281x overlay: compiled into rpi-ws281x-pwm; the firmware loads it from overlays/ (dtoverlay line in usercfg.txt)
+W=/tmp/ws281x
+mkdir -p $W $M/overlays
+tar -xzf out/repo/packages/aarch64/rpi-ws281x-pwm-*.apk -C $W usr/share/rpi-ws281x-pwm/rp1_ws281x_pwm.dtbo
+install -m644 $W/usr/share/rpi-ws281x-pwm/rp1_ws281x_pwm.dtbo $M/overlays/
 
 # One signed local repo with every package (ours + upstream deps), so the
 # diskless boot installs everything offline. The .boot_repository marker makes
@@ -45,7 +55,7 @@ mkdir -p $O/etc/apk/keys $O/etc/runlevels/sysinit $O/etc/runlevels/boot \
 cp keys/espnow.rsa.pub $O/etc/apk/keys/
 for s in devfs dmesg mdev hwdrivers modloop; do ln -s /etc/init.d/$s $O/etc/runlevels/sysinit/; done
 for s in modules sysctl hostname bootmisc syslog; do ln -s /etc/init.d/$s $O/etc/runlevels/boot/; done
-for s in networking dropbear espnow local; do ln -s /etc/init.d/$s $O/etc/runlevels/default/; done
+for s in networking dropbear espnow ntpd rpi-ws281x-pwm local; do ln -s /etc/init.d/$s $O/etc/runlevels/default/; done
 for s in killprocs mount-ro; do ln -s /etc/init.d/$s $O/etc/runlevels/shutdown/; done
 install -Dm755 test/espnow_rx.py $O/root/espnow_rx.py
 if [ -n "$SSH_PUBKEY" ]; then
@@ -68,4 +78,5 @@ echo 'start=2048, type=c, bootable' | sfdisk -q $img
 dd if=/tmp/part.img of=$img bs=1M seek=1 conv=notrunc status=none
 
 MTOOLS_SKIP_CHECK=1 mdir -i /tmp/part.img ::/ | grep -E 'apkovl|custom|usercfg|cmdline'
+MTOOLS_SKIP_CHECK=1 mdir -i /tmp/part.img ::/overlays | grep -E 'rp1_ws281x_pwm'
 echo "Built $img (${size_mb} MiB)"

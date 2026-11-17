@@ -4,7 +4,7 @@ Everything listed in `overlay/etc/apk/world`, plus its dependencies, is installe
 
 | Package | Version | Why |
 |---|---|---|
-| alpine-base, openrc | 3.23.7, 0.63 | Base system and init |
+| alpine-base, openrc | 3.23.8, 0.63 | Base system and init |
 | dropbear | 2025.88 | SSH server, key-only logins |
 | espnow-nexmon | 0.1.0 (ours) | Nexmon brcmfmac, Nexmon firmware, the `espnow.ko` driver and the `espnow` service. See [espnow.md](espnow.md) |
 | iw | 6.17 | Creates `mon0` and sets the channel |
@@ -15,10 +15,12 @@ Everything listed in `overlay/etc/apk/world`, plus its dependencies, is installe
 | i2c-tools, i2c-tools-dev, py3-smbus | 4.4 | `i2cdetect`/`i2cget`/…, the C `libi2c`, Python `smbus` |
 | py3-spidev | 3.8 (ours) | Python SPI. Alpine 3.23 doesn't package it, so it's built from PyPI in `packages/py3-spidev` |
 | picocom | 2024.07 | Serial terminal for the UARTs |
+| rpi-ws281x-pwm | 0.1.0 (ours) | WS281x PWM kernel module `rp1_ws281x_pwm` for the Pi 5 RP1 (GPIO18, channel 2), its overlay and the `rpi-ws281x-pwm` service. Built against linux-rpi 6.12.115. See [config.md](config.md#rpi-ws281x-pwm-service) |
+| py3-rpi-ws281x | 6.0.0 (ours) | Python WS281x bindings (`import rpi_ws281x`), built from the rpi-ws281x-python `pi5-beta2` tag and its pinned C library. Experimental on the Pi 5. See [hardware.md](hardware.md#ws281x-leds) |
 
 ## Per language
 
-- **Python:** `import gpiod`, `import smbus`, `import spidev`. For a UART, use the `py3-pyserial` package or plain `open('/dev/ttyAMA0')`.
+- **Python:** `import gpiod`, `import smbus`, `import spidev`, `import rpi_ws281x`. For a UART, use the `py3-pyserial` package or plain `open('/dev/ttyAMA0')`.
 - **C:** `#include <gpiod.h>` (link with `-lgpiod`), `<linux/i2c-dev.h>` with `<i2c/smbus.h>` (`-li2c`), `<linux/spi/spidev.h>`, and `termios` for UARTs.
 - **Rust:** add the [`rppal`](https://crates.io/crates/rppal) crate (GPIO, I2C, SPI, PWM and UART, with Pi 5 support) or `gpiocdev`, `i2cdev` and `spidev` to your project. Crates are downloaded by cargo per project, so the device needs network the first time.
 - **ESP-NOW:** every language uses a raw `AF_PACKET` socket on `espnow0`, so no library is needed. See [espnow.md](espnow.md).
