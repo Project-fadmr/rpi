@@ -3,7 +3,7 @@ import asyncio
 import socket
 
 MAGIC = bytes([2, 1, 4, 3, 6, 5, 8, 7])
-SOCK = "/tmp/radar.sock"          # must match the SOCK used by the Socket server
+SOCK = "/tmp/stream.sock"          # must match the SOCK used by the Socket server
 FILE_CHUNK = 4096
 
 
